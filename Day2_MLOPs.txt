@@ -1,0 +1,338 @@
+DVC STorage .dvc ->
+
+GitHub -> clone 
+
+XYZ - clone your repo
+
+-> Cloud Storage - S3
+-> can access to same DVC
+
+Shared n/w storage
+- Org n/w drive
+- shared server
+
+-------------------------------------------------------------------------
+
+git add WA_Fn-UseC_-Telco-Customer-Churn.csv.dvc
+git add .dvc
+git commit -m "Track dataset using DVC"
+git push
+
+---------------------------------------------------------------------
+
+git log --oneline
+git worktree add ..\churn_v1 commit_id
+git worktree add ..\churn_v2 commit_id
+cd ..\churn_v1
+dvc pull
+cd ..\churn_v2
+dvc pull
+
+-------------------------------------------------------------
+
+Git and DVC - two complimentary version control systems
+DVC tracks large datasets and model files
+DVC remote storage stores the actual content of those datasets
+
+----------------------------------------------------------------
+
+
+Experiment Tracking :
+
+ML model training - Logistic Regression, Random Forest
+                    max_iter = 1000, class_weight = "balanced"
+                    n_estimators=100, max_depth=8, random_state=42, class_weight="balanced"
+
+Team test :
+
+5 Logistic Regression configurations
+10 Random Forest configurations
+5 Diff datasets
+
+lots of experiments - store all the results - Acc and Precision
+
+- process of systematically recording all information related to ML model training experiment
+- max iter 2000 Acc precision, 3000.......
+
+we record :
+
+parameters, metrics, artifacts (trained models, files, plots), tags, dataset, source code
+
+MLflow
+
+- platform - helps us to manage and track the lifecycle of ML expermients
+- Jupyter Notebook 
+      |
+  Mlflow Tracking API
+      |
+  MLflow Tracking store 
+      |
+ Mlflow UI
+      
+Terminology :
+
+Experiment - Logical group of related runs 
+Run - One execution of model training - Random Forest with depth 8
+Paramters - Inputs/Config of runs
+Metrics - Measured Performance 
+
+----------------------------------------------------
+
+Mlflow Tracking Server
+
+-> centralized server - receives experiment information from Mlflow clients
+-> Dev 1 - trained LR model
+-> Dev 2 - train RF model
+
+Mlflow CLients -> HTTP request -> Mlflow tracking server -> log request and UI and APIs
+
+Backend store - metadata, exp name, id, run id, status..... SQLite
+Artifact Store - stores larger files - 
+               - trained ML models, model files, evaluation reports
+               - mlartifacts - folder, production - shared cloud storage
+
+
+mkdir mlartifacts
+
+Start the server :
+
+mlflow server --host 127.0.0.1 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlartifacts
+
+Connect tracking server to jupyter notebook
+
+------------------------------------------------------------------
+
+Model Management and Model Approval Process :
+
+
+Experiments - compare, analyze, figure out the best model
+
+Model Management - helps us control, version, approve, and release model for business use
+
+MLops workflow :
+
+Data Versioning 
+     |
+Model Training
+     |
+Experiment Tracking
+     |
+Model Mgmt - register the model
+     |
+Model Approval - review, validate and authorize production release
+     |
+Model Deployment - Deploy as an API or app
+     
+
+Model Management : 
+4 main components :
+
+1. Model Registry - Centralized repository for registered models and their versions
+2. Model Versioning - Same model - maintaining different versions
+3. Model Lifecycle - model stages developing, testing, production
+4. Model Promotion - Move model from one stage or env to another after validation
+
+
+Current workflow : model version tags and aliases - separate registered models for deployment, staging and production environment
+
+Tags : 
+
+Awaiting validation -> Tag: validation_status=pending
+Approved for production -> Tag: approval_status=approved
+Production-serving version -> Alias : champion
+
+----------------------------------------------------------------
+
+Model Promotion :
+model -evaluated - successfully passed evaluation - next level of deployment process
+
+DS - trains a model
+     model registered as v1
+     team validates performance
+     model is tested
+     After approval, selected for production
+
+     set_model_version_tag(name=, version=, key="approval_status", value:"approved")
+
+
+mlflow.sklearn.load_model("models:/c...@champion")
+
+make approved model accessible - via API
+
+---------------------------------------------------------
+
+Customer Churn Prediction :
+
+features - yes/no
+
+Customer - CRM app - want to know whether this customer is likely to leave
+send the customer details to ML API
+
+API :
+- receive customer information
+- load / access the trained ML model
+pass the customer data to the model
+get the prediction
+return the result - JSON
+
+Python - Web frameworks - Fast API, Flask
+       - can be used to build RESTful Services
+       - REST API - Representational State Transfer
+         - arch design - n/w based APIs - HTTP
+         - exposes resources through URLs and uses HTTP methods to perform operations
+         - GET, POST, PUT, DELETE, PATCH
+
+POST - submit customer info to the model
+
+API endpoint - app can access an API operation
+
+API - local host - 8000
+
+Client - Req - URL, POST, HEaders, Request body
+Server - response, response headers, response body
+
+HTTP status codes - 200 OK, 400 - Bad request, 500 - Internal server error
+--------------------------------------------------------------------------------
+
+FLASK :
+
+- lightweight Python web framework
+- build webapps and API
+- micro framework
+- essentials features for building web aap
+
+--------------------------------------------------------------------------------
+
+FastAPI
+
+- automatic request data validation - integrated with Pydantic
+- automatic API documentation
+- structured request/response models
+- API focused web framework
+- Built in async endpoint support
+- ML services , Rest APIs
+
+Uvicorn - runs the API server - run FastAPI application
+
+uvicorn fastapi_app:app --host 127.0.0.1 --port 8000 --reload
+
+
+uvicorn ASGI server
+fastapi_app - Python File
+app 
+reload - code changes restarts the server
+
+----------------------------------------------------------------------
+
+Swagger :
+
+- API - team 1
+- another team - use 
+- endpoints are created
+- HTTP methods are use
+- input data is needed
+- response return
+
+API documentation becomes important
+
+Swagger - set of tools for documentation and interact with REST APIs.
+        - FastAPI automatically generates documentation
+
+--------------------------------------------------------------------------
+Docker for MLOps :
+
+Containerization :
+
+API , registered, exposed it through API endpoints - Python env, dependencies
+
+Deployment Challenge - How can we package our API, ML model , dependencies, Python Env
+
+Docker - package an app together along with its required libraries, dependencies, configuration, runtime env - standardized unit - container image
+
+Image - can then be used to create container or compatible container platforms
+
+MLops project - Python runtime, FastAPI app code, Python Package, Model-loading code, App Config
+
+Consistency - same env - testing, dev, production
+Portability - Run the same iamge on diff comptable container platforms
+Scalability - Run multiple instances
+Deployment - to servers and Kubernetes cluster
+
+
+Dockerfile :
+
+- text file - has instructions describes how we an build container image
+
+- Python Base (3.11)
+
+Docker Image 
+- packaged, read only template - contains app - everything reqd to run application
+- composed of multiple layers
+-  App Layer (fast_app.py)
+      |
+  Dependency Layer (FastAPI, Mlflow, Pandas, scikit-learm)
+      |
+  Python runtime layer (Python 3.11)
+      |
+  Base OS files 
+
+Docker Container
+- running instance of a container image
+
+Docker Hub 
+  - is a container image registry 
+  - GitHub repository - container images
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
